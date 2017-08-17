@@ -3,34 +3,33 @@ package com.semihunaldi.excelorm;
 
 import java.io.Serializable;
 
-public class BaseExcel implements Serializable
-{
+
+/**
+ * Base POJO class for each well formatted row in excel file
+ */
+public class BaseExcel implements Serializable {
+
     private int _myRow;
     private int _myOldRow;
 
-    public int get_myRow()
-    {
+    public int get_myRow() {
         return _myRow;
     }
 
-    public void set_myRow(int _myRow)
-    {
+    public void set_myRow(int _myRow) {
         this._myRow = _myRow;
     }
 
-    public int get_myOldRow()
-    {
+    public int get_myOldRow() {
         return _myOldRow;
     }
 
-    public void set_myOldRow(int _myOldRow)
-    {
+    public void set_myOldRow(int _myOldRow) {
         this._myOldRow = _myOldRow;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -40,8 +39,7 @@ public class BaseExcel implements Serializable
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return _myRow;
     }
 }

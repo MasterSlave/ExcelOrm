@@ -24,10 +24,9 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ExcelReader
-{
-    public <T extends BaseExcel> List<T> read(XSSFWorkbook xssfWorkbook, Class<T> clazz) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException, IOException
-    {
+public class ExcelReader {
+
+    public <T extends BaseExcel> List<T> read(XSSFWorkbook xssfWorkbook, Class<T> clazz) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException, IOException {
         Validator.validate(xssfWorkbook);
         List<T> tList = new LinkedList<>();
         read(clazz, tList, xssfWorkbook);
@@ -35,8 +34,7 @@ public class ExcelReader
         return tList;
     }
 
-    public <T extends BaseExcel> List<T> read(InputStream inputStream, Class<T> clazz) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException, IOException
-    {
+    public <T extends BaseExcel> List<T> read(InputStream inputStream, Class<T> clazz) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException, IOException {
         List<T> tList = new LinkedList<>();
         XSSFWorkbook xssfWorkbook = new XSSFWorkbook(inputStream);
         inputStream.close();
@@ -45,8 +43,7 @@ public class ExcelReader
         return tList;
     }
 
-    public <T extends BaseExcel> List<T> read(File file, Class<T> clazz) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException, IOException, InvalidFormatException
-    {
+    public <T extends BaseExcel> List<T> read(File file, Class<T> clazz) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException, IOException, InvalidFormatException {
         List<T> tList = new LinkedList<>();
         XSSFWorkbook xssfWorkbook = new XSSFWorkbook(file);
         read(clazz, tList, xssfWorkbook);
@@ -54,31 +51,24 @@ public class ExcelReader
         return tList;
     }
 
-    private <T extends BaseExcel> void read(Class<T> clazz, List<T> tList, XSSFWorkbook xssfWorkbook) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException
-    {
+    private <T extends BaseExcel> void read(Class<T> clazz, List<T> tList, XSSFWorkbook xssfWorkbook) throws InstantiationException, IllegalAccessException, IllegalExcelArgumentException {
         Excel excelAnnotation = clazz.getAnnotation(Excel.class);
-        if (excelAnnotation != null)
-        {
+        if (excelAnnotation != null) {
             Validator.validate(excelAnnotation);
             int firstRow = excelAnnotation.firstRow();
             int firstCol = excelAnnotation.firstCol();
             String sheetName = excelAnnotation.sheetName();
             XSSFSheet xssfSheet = xssfWorkbook.getSheet(sheetName);
-            for (int rows = firstRow; rows < firstRow + xssfSheet.getPhysicalNumberOfRows(); rows++)
-            {
+            for (int rows = firstRow; rows < firstRow + xssfSheet.getPhysicalNumberOfRows(); rows++) {
                 T t = clazz.newInstance();
-                updateRowField(t,clazz,rows);
+                updateRowField(t, clazz, rows);
                 XSSFRow row = xssfSheet.getRow(rows);
-                if(row != null)
-                {
-                    for (int cells = firstCol; cells < firstCol + row.getPhysicalNumberOfCells(); cells++)
-                    {
+                if (row != null) {
+                    for (int cells = firstCol; cells < firstCol + row.getPhysicalNumberOfCells(); cells++) {
                         XSSFCell cell = row.getCell(cells);
-                        if(cell != null)
-                        {
-                            Field field = findFieldByColNumber(clazz, cells,firstCol);
-                            if (field != null)
-                            {
+                        if (cell != null) {
+                            Field field = findFieldByColNumber(clazz, cells, firstCol);
+                            if (field != null) {
                                 setFieldValue(t, cell, field);
                             }
                         }
@@ -89,134 +79,92 @@ public class ExcelReader
         }
     }
 
-    private <T extends BaseExcel> void setFieldValue(T t, XSSFCell cell, Field field)
-    {
+    private <T extends BaseExcel> void setFieldValue(T t, XSSFCell cell, Field field) {
         Object o = getCellValue(cell, field);
         setFieldValue(t, field, o);
     }
 
-    private <T extends BaseExcel> void setFieldValue(T t, Field field, Object o)
-    {
-        try
-        {
+    private <T extends BaseExcel> void setFieldValue(T t, Field field, Object o) {
+        try {
             boolean accessible = field.isAccessible();
             field.setAccessible(true);
             field.set(t, o);
             field.setAccessible(accessible);
-        }
-        catch (IllegalAccessException e)
-        {
+        } catch (IllegalAccessException e) {
             //swallow
         }
     }
 
-    private Field findFieldByColNumber(Class clazz, int col, int firstCol)
-    {
+    private Field findFieldByColNumber(Class clazz, int col, int firstCol) {
         List<Field> fieldsListWithAnnotation = FieldUtils.getFieldsListWithAnnotation(clazz, ExcelColumn.class);
-        for (Field field : fieldsListWithAnnotation)
-        {
+        for (Field field : fieldsListWithAnnotation) {
             ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
-            if (firstCol + annotation.col() == col)
-            {
+            if (firstCol + annotation.col() == col) {
                 return field;
             }
         }
         return null;
     }
 
-    private <T extends BaseExcel> void updateRowField(T t, Class clazz, int row)
-    {
-        Field field = FieldUtils.getField(clazz,"_myRow",true);
-        setFieldValue(t,field,row);
+    private <T extends BaseExcel> void updateRowField(T t, Class clazz, int row) {
+        Field field = FieldUtils.getField(clazz, "_myRow", true);
+        setFieldValue(t, field, row);
     }
 
-    private Object getCellValue(XSSFCell cell, Field field)
-    {
+    private Object getCellValue(XSSFCell cell, Field field) {
         Class<?> type = field.getType();
-        try
-        {
-            if (type == String.class)
-            {
+        try {
+            if (type == String.class) {
                 cell.setCellType(CellType.STRING);
                 return cell.getStringCellValue();
-            }
-            else if (type == Integer.class)
-            {
+            } else if (type == Integer.class) {
                 return Integer.valueOf(getNumericTypesAsString(cell));
-            }
-            else if (type == Double.class)
-            {
+            } else if (type == Double.class) {
                 return Double.valueOf(getNumericTypesAsString(cell));
-            }
-            else if (type == BigInteger.class)
-            {
+            } else if (type == BigInteger.class) {
                 return new BigInteger(getNumericTypesAsString(cell));
-            }
-            else if (type == Long.class)
-            {
+            } else if (type == Long.class) {
                 return Long.valueOf(getNumericTypesAsString(cell));
-            }
-            else if (type == Boolean.class)
-            {
+            } else if (type == Boolean.class) {
                 cell.setCellType(CellType.BOOLEAN);
                 return cell.getBooleanCellValue();
-            }
-            else if(type == Date.class)
-            {
-                return tryToGetDateCellValue(cell,field);
-            }
-            else
-            {
+            } else if (type == Date.class) {
+                return tryToGetDateCellValue(cell, field);
+            } else {
                 cell.setCellType(CellType.STRING);
                 return cell.getStringCellValue();
             }
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             return null;
         }
     }
 
-    private Date tryToGetDateCellValue(XSSFCell cell, Field field)
-    {
-        try
-        {
+    private Date tryToGetDateCellValue(XSSFCell cell, Field field) {
+        try {
             ExcelColumn annotation = field.getAnnotation(ExcelColumn.class);
-            if(annotation != null && StringUtils.isNotBlank(annotation.dateFormat()))
-            {
+            if (annotation != null && StringUtils.isNotBlank(annotation.dateFormat())) {
                 cell.setCellType(CellType.STRING);
                 String stringCellValue = cell.getStringCellValue();
                 DateTimeFormatter dtf = DateTimeFormat.forPattern(annotation.dateFormat());
                 DateTime dateTime = dtf.parseDateTime(stringCellValue);
                 return dateTime.toDate();
-            }
-            else
-            {
-                try
-                {
+            } else {
+                try {
                     return cell.getDateCellValue();
-                }
-                catch (Exception e)
-                {
+                } catch (Exception e) {
                     return null;
                 }
             }
-        }
-        catch (Exception e1)
-        {
-            try
-            {
+        } catch (Exception e1) {
+            try {
                 return cell.getDateCellValue();
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 return null;
             }
         }
     }
 
-    private String getNumericTypesAsString(XSSFCell cell)
-    {
+    private String getNumericTypesAsString(XSSFCell cell) {
         cell.setCellType(CellType.STRING);
         return cell.getStringCellValue();
     }
